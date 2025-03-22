@@ -37,6 +37,6 @@ private:
 
     // Initial state setup
     INITIALIZE
-        state.counter = 8;
+        state.counter = 100;
     _
 };
