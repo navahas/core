@@ -7,60 +7,36 @@ struct HM252
 struct HM25 : public ContractBase
 {
 public:
-    struct Echo_input{};
-    struct Echo_output{};
+    struct Increment_input {};
+    struct Increment_output {};
 
-    struct Burn_input{};
-    struct Burn_output{};
-
-    struct GetStats_input {};
-    struct GetStats_output
+    struct GetCounter_input {};
+    struct GetCounter_output
     {
-        uint64 numberOfEchoCalls;
-        uint64 numberOfBurnCalls;
+        uint64 value;
     };
 
 private:
-    uint64 numberOfEchoCalls;
-    uint64 numberOfBurnCalls;
+    uint64 counter;
 
-    /**
-    Send back the invocation amount
-    */
-    PUBLIC_PROCEDURE(Echo)
-        state.numberOfEchoCalls++;
-        if (qpi.invocationReward() > 0)
-        {
-            qpi.transfer(qpi.invocator(), qpi.invocationReward());
-        }
+    // Procedure: Increment the counter by 1
+    PUBLIC_PROCEDURE(Increment)
+        state.counter++;
     _
 
-    /**
-    * Burn all invocation amount
-    */
-    PUBLIC_PROCEDURE(Burn)
-        state.numberOfBurnCalls++;
-        if (qpi.invocationReward() > 0)
-        {
-            qpi.burn(qpi.invocationReward());
-        }
+    // Function: Return the current counter value
+    PUBLIC_FUNCTION(GetCounter)
+        output.value = state.counter;
     _
 
-    PUBLIC_FUNCTION(GetStats)
-        output.numberOfBurnCalls = state.numberOfBurnCalls;
-        output.numberOfEchoCalls = state.numberOfEchoCalls;
-    _
-
+    // Register function and procedure with IDs
     REGISTER_USER_FUNCTIONS_AND_PROCEDURES
-
-        REGISTER_USER_PROCEDURE(Echo, 1);
-        REGISTER_USER_PROCEDURE(Burn, 2);
-
-        REGISTER_USER_FUNCTION(GetStats, 1);
+        REGISTER_USER_PROCEDURE(Increment, 1);
+        REGISTER_USER_FUNCTION(GetCounter, 1);
     _
 
+    // Initial state setup
     INITIALIZE
-        state.numberOfEchoCalls = 0;
-        state.numberOfBurnCalls = 0;
+        state.counter = 0;
     _
 };
