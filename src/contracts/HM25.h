@@ -29,6 +29,7 @@ private:
         output.value = state.counter;
     _
 
+    // 
     // Register function and procedure with IDs
     REGISTER_USER_FUNCTIONS_AND_PROCEDURES
         REGISTER_USER_PROCEDURE(Increment, 1);
