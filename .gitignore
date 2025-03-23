@@ -1,11 +1,11 @@
 /packages/
 /.vscode/
-/old/
-/notes/
+/src/old/
+/src/notes/
 .vs/
 x64/
 ~AutoRecover.*.vcxproj
-/test/spectrum.*
-/test/universe.*
-/test/contract0???.???
-/test/tmp_file_*
+/src/test/spectrum.*
+/src/test/universe.*
+/src/test/contract0???.???
+/src/test/tmp_file_*
