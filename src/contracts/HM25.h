@@ -1,127 +1,63 @@
 using namespace QPI;
-
-struct RentContract : public ContractBase {
+struct TrustScoreCounter : public ContractBase
+{
 public:
+    struct IncrementPayment_input {
+        identity tenant;
+    };
+    struct GetTrustScore_input {
+        identity tenant;
+    };
+    struct GetTrustScore_output {
+        uint8 score;
+        uint64 totalPayments;
+        uint64 successfulPayments;
+    };
     struct Init_input {
-        id landlord;
-        uint64 rentAmount;
-        uint64 commissionPercent; // in basis points, e.g. 200 = 2%
+        identity admin;
     };
-
-    struct DepositGuarantee_input {
-        id tenant;
-        uint64 amount;
-    };
-
-    struct DepositRent_input {
-        identity tenant;
-        uint64 amount;
-    };
-
-    struct Claim_input {
-        identity tenant;
-    };
-
-    struct GetState_output {
-        uint64 tenantBalance;
-        uint64 owedToLandlord;
-        uint8 trustScore;
-        bool hasPaidGuarantee;
-    };
-
 private:
-    identity landlord;
-    uint64 rentAmount;
-    uint64 commissionPercent;
-
+    identity admin;
     struct TenantInfo {
-        uint64 balance;
-        uint8 totalPayments;
-        uint8 successfulPayments;
-        bool hasPaidGuarantee;
+        uint64 totalPayments;
+        uint64 successfulPayments;
     };
-
     map<identity, TenantInfo> tenants;
 
+    // Initialize with admin
     PUBLIC_PROCEDURE(Init)
         assert(msg.sender != identity::null());
-        landlord = input.landlord;
-        rentAmount = input.rentAmount;
-        commissionPercent = input.commissionPercent;
+        admin = input.admin;
     _
-
-    PUBLIC_PROCEDURE(DepositGuarantee)
-        assert(msg.asset_in == "QUSD");
-
+    
+    // Increment successful payments for a tenant
+    PUBLIC_PROCEDURE(IncrementPayment)
+        assert(msg.sender == admin);
         auto& t = tenants[input.tenant];
-
-        uint8 score = 0;
-        if (t.totalPayments > 0)
-            score = (t.successfulPayments * 10) / t.totalPayments;
-
-        uint64 requiredGuarantee;
-        if (score >= 10)
-            requiredGuarantee = rentAmount / 2;
-        else if (score <= 5)
-            requiredGuarantee = rentAmount;
-        else
-            requiredGuarantee = rentAmount * (10 - score) / 10;
-
-        assert(input.amount >= requiredGuarantee);
-        assert(!t.hasPaidGuarantee);
-
-        t.balance += input.amount;
-        t.hasPaidGuarantee = true;
-    _
-
-    PUBLIC_PROCEDURE(DepositRent)
-        assert(msg.asset_in == "QUSD");
-
-        auto& t = tenants[input.tenant];
-
-        assert(t.hasPaidGuarantee);
-        assert(input.amount == rentAmount);
-
-        t.balance += input.amount;
         t.totalPayments++;
         t.successfulPayments++;
     _
-
-    PUBLIC_PROCEDURE(Claim)
-        assert(msg.sender == landlord);
-
+    
+    // Get the current trust score for a tenant
+    PUBLIC_FUNCTION(GetTrustScore)
         auto& t = tenants[input.tenant];
-        uint64 amount = t.balance;
-        assert(amount > 0);
-
-        uint64 commission = (amount * commissionPercent) / 10000;
-        uint64 payout = amount - commission;
-
-        transfer_asset(landlord, "QUSD", payout);
-        t.balance = 0;
-    _
-
-    PUBLIC_FUNCTION(GetState)
-        auto& t = tenants[msg.sender];
-        output.tenantBalance = t.balance;
-        output.owedToLandlord = t.balance - ((t.balance * commissionPercent) / 10000);
-
         if (t.totalPayments > 0)
-            output.trustScore = (t.successfulPayments * 10) / t.totalPayments;
+            output.score = (t.successfulPayments * 10) / t.totalPayments;
         else
-            output.trustScore = 0;
-
-        output.hasPaidGuarantee = t.hasPaidGuarantee;
+            output.score = 0;
+        output.totalPayments = t.totalPayments;
+        output.successfulPayments = t.successfulPayments;
     _
-
+    
+    // Register function and procedure with IDs
     REGISTER_USER_FUNCTIONS_AND_PROCEDURES
         REGISTER_USER_PROCEDURE(Init, 1);
-        REGISTER_USER_PROCEDURE(DepositGuarantee, 2);
-        REGISTER_USER_PROCEDURE(DepositRent, 3);
-        REGISTER_USER_PROCEDURE(Claim, 4);
-        REGISTER_USER_FUNCTION(GetState, 1);
+        REGISTER_USER_PROCEDURE(IncrementPayment, 2);
+        REGISTER_USER_FUNCTION(GetTrustScore, 1);
     _
-
+    
+    // Initial state setup
     INITIALIZE
+        admin = identity::null();
     _
 };
