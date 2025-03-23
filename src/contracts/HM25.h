@@ -3,13 +3,13 @@ using namespace QPI;
 struct RentContract : public ContractBase {
 public:
     struct Init_input {
-        identity landlord;
+        id landlord;
         uint64 rentAmount;
         uint64 commissionPercent; // in basis points, e.g. 200 = 2%
     };
 
     struct DepositGuarantee_input {
-        identity tenant;
+        id tenant;
         uint64 amount;
     };
 
